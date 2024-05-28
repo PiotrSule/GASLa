@@ -1,1 +1,61 @@
+#PDF
+C=function(a,b)return(2*(1+a^2-a*b*(b+2)/(b+1)^2))
+dGASLa <- function(x,a,b){
+  res=((1-a*x)^2+1)*(1+sign(b*x)*(1-exp(-abs(b*x))))/(2*C(a,b)*exp(abs(x)))
+  return(res)
+}
 
+#CDF
+pGASLa <- function(x,a,b){
+  return(integral(function(x) dGASLa(x,a,b), -Inf, x, reltol = 1e-12, method = "Simpson"))
+}
+
+#quantile
+qGASLa=function(p,a,b){
+  u1 = function(x,a,b) pGASLa(x,a,b)-p
+  return(uniroot(u1, c(-15,15), tol = 0.0000000001, a=a, b=b)$root)
+}
+
+#mode in (x1,x2)
+modeGASLa=function (a,b,x1,x2){
+  res=optimize(function(x) dGASLa(x,a,b),interval=c(x1,x2), maximum=1)$maximum
+  return(res)
+}
+
+#ordinary moments
+mGASLa=function(k,a,b) {
+  return(integral(function(x) x^k*dGASLa(x,a,b), -Inf, Inf, reltol = 1e-12, method = "Simpson"))
+}
+
+#main characteristics
+chGASLa=function(a,b){
+  x=numeric(4)
+  x[1]=mGASLa(1,a,b) #mean
+  x[2]=sqrt(mGASLa(2,a,b)-x[1]^2) # standard deviation
+  w1=mGASLa(3,a,b)-3*x[1]*mGASLa(2,a,b)+2*x[1]^3
+  x[3]=w1/x[2]^3 #skewness
+  w2=mGASLa(4,a,b)-4*x[1]*mGASLa(3,a,b)+6*x[1]^2*mGASLa(2,a,b)-3*x[1]^4
+  x[4]=w2/x[2]^4 #kurtosis
+  return(x)
+}
+
+#MGF
+mgfGASLa=function(t,a,b) {
+  return(integral(function(x) exp(t*x)*dGASLa(x,a,b), -Inf, Inf, reltol = 1e-12, method = "Simpson"))
+}
+
+#order statistic PDF
+dOSGASLa=function(x,i,n,a,b) {
+  return(fact(n)/fact(i-1)/fact(n-i)*dGASLa(x,a,b)*pGASLa(x,a,b)^(i-1)*(1-pGASLa(x,a,b))^(n-i))
+}
+
+mOSGASLa=function(k,i,n,a,b) {
+  return(integral(function(x) x^k*dOSNGASLa(x,i,n,a,b), -Inf, Inf, reltol = 1e-12, method = "Simpson"))
+}
+
+#generator
+rGASLa =function(n,a,b) {
+  x=numeric(n)
+  for (i in 1:n) x[i]=qGASLa(runif(1,0,1),a,b)
+  return(sort(x))
+}
